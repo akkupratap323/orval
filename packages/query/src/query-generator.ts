@@ -1135,10 +1135,13 @@ ${hookOptions}
     deprecated,
   });
 
+  // Callers only ever see the overloads (the implementation signature is
+  // hidden), so each one carries the operation's doc for editor hover.
+  const overloadDoc = doc ?? '';
   const overrideTypes = `
-export function ${queryHookName}<TData = ${TData}, TError = ${errorType}>(\n ${definedInitialDataQueryPropsDefinitions} ${definedInitialDataQueryArguments} ${optionalQueryClientArgument}\n  ): ${definedInitialDataReturnType}
-export function ${queryHookName}<TData = ${TData}, TError = ${errorType}>(\n ${queryPropDefinitions} ${undefinedInitialDataQueryArguments} ${optionalQueryClientArgument}\n  ): ${returnType}
-export function ${queryHookName}<TData = ${TData}, TError = ${errorType}>(\n ${queryPropDefinitions} ${queryArguments} ${optionalQueryClientArgument}\n  ): ${returnType}`;
+${overloadDoc}export function ${queryHookName}<TData = ${TData}, TError = ${errorType}>(\n ${definedInitialDataQueryPropsDefinitions} ${definedInitialDataQueryArguments} ${optionalQueryClientArgument}\n  ): ${definedInitialDataReturnType}
+${overloadDoc}export function ${queryHookName}<TData = ${TData}, TError = ${errorType}>(\n ${queryPropDefinitions} ${undefinedInitialDataQueryArguments} ${optionalQueryClientArgument}\n  ): ${returnType}
+${overloadDoc}export function ${queryHookName}<TData = ${TData}, TError = ${errorType}>(\n ${queryPropDefinitions} ${queryArguments} ${optionalQueryClientArgument}\n  ): ${returnType}`;
 
   const prefetchContext = {
     usePrefetch,
@@ -1364,7 +1367,7 @@ export const generateQueryHook = async (
     mutator,
     response,
     operationId,
-    summary,
+    doc,
     deprecated,
   } = verbOptions;
   const {
@@ -1384,7 +1387,6 @@ export const generateQueryHook = async (
     !!context.output.tsconfig?.compilerOptions?.exactOptionalPropertyTypes;
 
   const httpClient = context.output.httpClient;
-  const doc = jsDoc({ summary, deprecated });
 
   let implementation = '';
   let mutators: GeneratorMutator[] | undefined;

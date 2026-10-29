@@ -1,5 +1,5 @@
 import type { GeneratorVerbOptions, ResReqTypesValue } from '@orval/core';
-import { OutputClient, OutputHttpClient } from '@orval/core';
+import { jsDoc, OutputClient, OutputHttpClient } from '@orval/core';
 import { describe, expect, it } from 'vite-plus/test';
 
 import {
@@ -629,5 +629,80 @@ describe('generateQueryHeader SecondParameter helper (#4388)', () => {
       typeof header === 'string' ? header : header.implementation;
 
     expect(implementation).not.toContain('type SecondParameter<');
+  });
+});
+
+describe('generateQuery — operation docs on every hook signature (#4399)', () => {
+  const operationDoc = jsDoc({
+    description: 'Retrieves the unique operator facility.',
+    summary: 'Get operator facility',
+  });
+
+  const generate = (verb: 'get' | 'post', doc: string) =>
+    generateQuery(
+      createTestGeneratorVerbOptions({
+        verb,
+        route: '/facilities/operator',
+        pathRoute: '/facilities/operator',
+        operationId: 'getOperatorFacility',
+        operationName: 'getOperatorFacility',
+        typeName: 'getOperatorFacility',
+        summary: 'Get operator facility',
+        doc,
+        override: {
+          query: {
+            useQuery: verb === 'get',
+            useSuspenseQuery: true,
+            useMutation: verb === 'post',
+          },
+        },
+      }),
+      createTestGeneratorOptions({
+        route: '/facilities/operator',
+        pathRoute: '/facilities/operator',
+        context: {
+          output: {
+            client: OutputClient.REACT_QUERY,
+            httpClient: OutputHttpClient.FETCH,
+            packageJson: {
+              resolvedVersions: { '@tanstack/react-query': '5.90.0' },
+            },
+          },
+        },
+      }),
+      OutputClient.REACT_QUERY,
+    );
+
+  const hookSignatures = (implementation: string) =>
+    implementation.match(/export function use\w+</g) ?? [];
+  const documentedHookSignatures = (implementation: string, doc: string) =>
+    implementation
+      .split(doc)
+      .slice(1)
+      .filter((after) => /^\s*export function use\w+</.test(after));
+
+  it('documents each overload and the implementation of query and suspense hooks', async () => {
+    const { implementation } = await generate('get', operationDoc);
+
+    // useQuery and useSuspenseQuery: three overloads plus the implementation each
+    expect(hookSignatures(implementation)).toHaveLength(8);
+    expect(documentedHookSignatures(implementation, operationDoc)).toHaveLength(
+      8,
+    );
+  });
+
+  it('gives the mutation hook the description as well as the summary', async () => {
+    const { implementation } = await generate('post', operationDoc);
+
+    expect(implementation).toContain(
+      `${operationDoc}export const useGetOperatorFacility =`,
+    );
+  });
+
+  it('emits no comment on the hooks when the operation has no docs', async () => {
+    const { implementation } = await generate('get', '');
+
+    expect(hookSignatures(implementation)).toHaveLength(8);
+    expect(implementation).not.toContain('/**');
   });
 });
