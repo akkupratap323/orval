@@ -3172,6 +3172,42 @@ describe('normalizeOptions', () => {
     }
   });
 
+  it('keeps query docs options globally and per operation', async () => {
+    const workspace = await createTempWorkspace();
+
+    try {
+      const normalized = await normalizeOptions(
+        {
+          input: {
+            target: {
+              openapi: '3.1.0',
+              info: { title: 'Test', version: '1.0.0' },
+              paths: {},
+            },
+          },
+          output: {
+            target: './api.ts',
+            client: 'react-query',
+            override: {
+              query: { docs: { route: true } },
+              operations: {
+                listPets: { query: { docs: { route: false } } },
+              },
+            },
+          },
+        },
+        workspace,
+      );
+
+      expect(normalized.output.override.query.docs).toEqual({ route: true });
+      expect(
+        normalized.output.override.operations.listPets?.query?.docs,
+      ).toEqual({ route: false });
+    } finally {
+      await rm(workspace, { recursive: true, force: true });
+    }
+  });
+
   it('normalizes effect options without falling back to zod', async () => {
     const workspace = await createTempWorkspace();
 

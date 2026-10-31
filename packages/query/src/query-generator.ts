@@ -1345,6 +1345,19 @@ ${
 `;
 };
 
+/**
+ * Appends an `@route VERB /path` tag to an operation's rendered JSDoc, or
+ * renders a block holding only that tag when the operation has no docs.
+ */
+export const addRouteToDoc = (doc: string, verb: Verbs, pathRoute: string) => {
+  const routeTag = `@route ${verb.toUpperCase()} ${pathRoute.replaceAll('*/', String.raw`*\/`)}`;
+  const closing = '\n */\n';
+
+  return doc.endsWith(closing)
+    ? `${doc.slice(0, -closing.length)}\n * ${routeTag}${closing}`
+    : `${doc}/**\n * ${routeTag}${closing}`;
+};
+
 export const generateQueryHook = async (
   verbOptions: GeneratorVerbOptions,
   options: GeneratorOptions,
@@ -1367,7 +1380,6 @@ export const generateQueryHook = async (
     mutator,
     response,
     operationId,
-    doc,
     deprecated,
   } = verbOptions;
   const {
@@ -1387,6 +1399,11 @@ export const generateQueryHook = async (
     !!context.output.tsconfig?.compilerOptions?.exactOptionalPropertyTypes;
 
   const httpClient = context.output.httpClient;
+  const includeRouteInDoc =
+    operationQueryOptions?.docs?.route ?? query.docs?.route ?? false;
+  const doc = includeRouteInDoc
+    ? addRouteToDoc(verbOptions.doc, verb, verbOptions.pathRoute)
+    : verbOptions.doc;
 
   let implementation = '';
   let mutators: GeneratorMutator[] | undefined;

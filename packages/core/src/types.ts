@@ -1552,6 +1552,16 @@ export interface NormalizedAngularRuntimeValidation extends NormalizedRuntimeVal
 
 export type InfiniteQueryParamLocation = 'query' | 'body';
 
+export interface QueryDocsOptions {
+  /**
+   * Add an `@route VERB /path` line to the JSDoc of the generated hooks, so
+   * hovering a hook shows the endpoint it calls.
+   *
+   * @default false
+   */
+  route?: boolean;
+}
+
 export interface NormalizedQueryOptions {
   useQuery?: boolean;
   useSuspenseQuery?: boolean;
@@ -1577,6 +1587,7 @@ export interface NormalizedQueryOptions {
    * the check and `refetch()` cannot bypass it. TanStack Query v5 only.
    */
   useSkipToken?: boolean;
+  docs?: QueryDocsOptions;
 
   options?: Record<string, unknown>;
   queryKey?: NormalizedMutator;
@@ -1620,6 +1631,7 @@ export interface QueryOptions {
    * the check and `refetch()` cannot bypass it. TanStack Query v5 only.
    */
   useSkipToken?: boolean;
+  docs?: QueryDocsOptions;
 
   options?: Record<string, unknown>;
   queryKey?: Mutator;

@@ -7,6 +7,7 @@ import {
   createTestGeneratorVerbOptions,
 } from '../../core/src/test-utils';
 import { builder, generateQuery, generateQueryHeader } from './index';
+import { addRouteToDoc } from './query-generator';
 
 const successType = (
   overrides: Partial<ResReqTypesValue> & Pick<ResReqTypesValue, 'value'>,
@@ -638,7 +639,11 @@ describe('generateQuery — operation docs on every hook signature (#4399)', () 
     summary: 'Get operator facility',
   });
 
-  const generate = (verb: 'get' | 'post', doc: string) =>
+  const generate = (
+    verb: 'get' | 'post',
+    doc: string,
+    docs?: { global?: { route?: boolean }; operation?: { route?: boolean } },
+  ) =>
     generateQuery(
       createTestGeneratorVerbOptions({
         verb,
@@ -654,12 +659,22 @@ describe('generateQuery — operation docs on every hook signature (#4399)', () 
             useQuery: verb === 'get',
             useSuspenseQuery: true,
             useMutation: verb === 'post',
+            ...(docs?.global ? { docs: docs.global } : {}),
           },
         },
       }),
       createTestGeneratorOptions({
         route: '/facilities/operator',
         pathRoute: '/facilities/operator',
+        ...(docs?.operation
+          ? {
+              override: {
+                operations: {
+                  getOperatorFacility: { query: { docs: docs.operation } },
+                },
+              },
+            }
+          : {}),
         context: {
           output: {
             client: OutputClient.REACT_QUERY,
@@ -704,5 +719,72 @@ describe('generateQuery — operation docs on every hook signature (#4399)', () 
 
     expect(hookSignatures(implementation)).toHaveLength(8);
     expect(implementation).not.toContain('/**');
+  });
+
+  const routedDoc = `/**
+ * Retrieves the unique operator facility.
+ * @summary Get operator facility
+ * @route GET /facilities/operator
+ */
+`;
+
+  it('adds the method and path to every hook signature with docs.route', async () => {
+    const { implementation } = await generate('get', operationDoc, {
+      global: { route: true },
+    });
+
+    expect(documentedHookSignatures(implementation, routedDoc)).toHaveLength(8);
+  });
+
+  it('adds the route to the mutation hook', async () => {
+    const { implementation } = await generate('post', operationDoc, {
+      global: { route: true },
+    });
+
+    expect(implementation).toContain(
+      `${routedDoc.replace('GET', 'POST')}export const useGetOperatorFacility =`,
+    );
+  });
+
+  it('leaves the route out by default and when an operation turns it off', async () => {
+    const byDefault = await generate('get', operationDoc);
+    const turnedOff = await generate('get', operationDoc, {
+      global: { route: true },
+      operation: { route: false },
+    });
+
+    expect(byDefault.implementation).not.toContain('@route');
+    expect(turnedOff.implementation).not.toContain('@route');
+  });
+
+  it('lets an operation turn the route on when the global option is off', async () => {
+    const { implementation } = await generate('get', operationDoc, {
+      operation: { route: true },
+    });
+
+    expect(documentedHookSignatures(implementation, routedDoc)).toHaveLength(8);
+  });
+});
+
+describe('addRouteToDoc', () => {
+  it('appends the tag inside an existing block', () => {
+    expect(
+      addRouteToDoc(jsDoc({ summary: 'List pets' }), 'get', '/pets/{petId}'),
+    ).toBe('/**\n * @summary List pets\n * @route GET /pets/{petId}\n */\n');
+  });
+
+  it('renders a block of its own when the operation has no docs', () => {
+    expect(addRouteToDoc('', 'delete', '/pets/{petId}')).toBe(
+      '/**\n * @route DELETE /pets/{petId}\n */\n',
+    );
+  });
+
+  it('cannot close the comment early through the path', () => {
+    expect(addRouteToDoc('', 'get', '/a*/b')).toBe(
+      String.raw`/**
+ * @route GET /a*\/b
+ */
+`,
+    );
   });
 });

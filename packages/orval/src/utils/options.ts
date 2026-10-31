@@ -1898,6 +1898,7 @@ function normalizeQueryOptions(
     ...(isNullish(queryOptions.useSkipToken)
       ? {}
       : { useSkipToken: queryOptions.useSkipToken }),
+    ...(queryOptions.docs ? { docs: { ...queryOptions.docs } } : {}),
     ...(isNullish(queryOptions.useQuery)
       ? {}
       : { useQuery: queryOptions.useQuery }),

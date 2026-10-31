@@ -1399,6 +1399,45 @@ export default defineConfig({
 
 仅适用于 React Query v5。Suspense queries 不受影响——TanStack 不会在其 `queryFn` 中使用 `SkipToken`。
 
+### docs
+
+**类型：** `Object`
+
+控制生成的 hooks 的 JSDoc。每个 hook 签名（包括 query hook 的每个重载）都已经带有该 operation 的 description、`@summary` 和 `@deprecated`。
+
+#### route
+
+**类型：** `Boolean`
+**默认值：** `false`
+
+在 hooks 及其 helpers 的 JSDoc 中加入该 operation 的 HTTP 方法和路径，这样悬停在 hook 上时就能看到它调用的 endpoint：
+
+```ts title="orval.config.ts"
+export default defineConfig({
+  petstore: {
+    output: {
+      client: 'react-query',
+      override: {
+        query: {
+          docs: { route: true },
+        },
+      },
+    },
+  },
+});
+```
+
+```ts
+/**
+ * Retrieves the unique operator facility.
+ * @summary Get operator facility
+ * @route GET /api/facilities/operator
+ */
+export function useGetOperatorFacility<...>(...): UseQueryResult<...>
+```
+
+也可以在 `override.operations.<operationId>.query.docs` 中按 operation 单独设置。
+
 ### mutationInvalidates
 
 **类型：** `Array`

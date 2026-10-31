@@ -1789,6 +1789,45 @@ Unlike `enabled`, this also covers `refetch()`: no request is sent with an unres
 
 React Query v5 only. Suspense queries are unaffected — TanStack excludes `SkipToken` from their `queryFn`.
 
+### docs
+
+**Type:** `Object`
+
+Controls the JSDoc of the generated hooks. Every hook signature, including each overload of a query hook, already carries the operation's description, `@summary` and `@deprecated`.
+
+#### route
+
+**Type:** `Boolean`
+**Default:** `false`
+
+Add the operation's HTTP method and path to the JSDoc of its hooks and their helpers, so hovering a hook shows the endpoint it calls:
+
+```ts title="orval.config.ts"
+export default defineConfig({
+  petstore: {
+    output: {
+      client: 'react-query',
+      override: {
+        query: {
+          docs: { route: true },
+        },
+      },
+    },
+  },
+});
+```
+
+```ts
+/**
+ * Retrieves the unique operator facility.
+ * @summary Get operator facility
+ * @route GET /api/facilities/operator
+ */
+export function useGetOperatorFacility<...>(...): UseQueryResult<...>
+```
+
+It can also be set per operation under `override.operations.<operationId>.query.docs`.
+
 ### mutationInvalidates
 
 **Type:** `Array`
